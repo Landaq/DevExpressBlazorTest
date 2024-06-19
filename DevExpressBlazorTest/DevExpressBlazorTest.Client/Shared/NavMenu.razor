@@ -1,0 +1,26 @@
+﻿@inject HttpClient client
+
+<div class="sidebar @StateCssClass">
+<DxTreeView Data="menuSettings"
+            AllowSelectNodes="true"
+            AnimationType="LayoutAnimationType.Slide"
+            CssClass="app-sidebar">
+    <DataMappings>
+        <DxTreeViewDataMapping  Text="MenuName"
+                                 Key="MenuId"
+                                 ParentKey="GroupName"
+                                 NavigateUrl="Page"/>
+    </DataMappings>
+</DxTreeView>
+</div>
+
+@code {
+    [Parameter] public string? StateCssClass { get; set; }
+
+    MenuSetting[] menuSettings { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        menuSettings = await client.GetFromJsonAsync<MenuSetting[]>("api/menuSetting");
+    }
+}

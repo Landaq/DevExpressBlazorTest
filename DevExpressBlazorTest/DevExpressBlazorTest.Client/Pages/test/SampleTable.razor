@@ -1,0 +1,90 @@
+﻿@page "/sample"
+@inject HttpClient client
+
+<h3>SampleTable</h3>
+
+@if(IsLoading)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <DxGrid 
+            Data="developers"
+            KeyFieldName="Id"
+            EditModelSaving="OnEditModelSaving"
+            DataItemDeleting="OnDataItemDeleting"
+            EditMode="GridEditMode.PopupEditForm"
+            PopupEditFormHeaderText="Edit Employee">
+        <Columns>
+            <DxGridCommandColumn VisibleIndex="0" />
+            <DxGridDataColumn FieldName="FirstName" />
+            <DxGridDataColumn FieldName="LastName" />
+            <DxGridDataColumn FieldName="Email" />
+            <DxGridDataColumn FieldName="Experience" />
+        </Columns>
+        <EditFormTemplate Context="editFormContext">
+            <DxFormLayout>
+                <DxFormLayoutItem Caption="First Name:">
+                    @editFormContext.GetEditor("FirstName")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Last Name:">
+                    @editFormContext.GetEditor("LastName")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Email:">
+                    @editFormContext.GetEditor("Email")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Experience">
+                    @editFormContext.GetEditor("Experience")
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+}
+
+
+@code {
+    Developer[] developers { get; set; }
+    Developer dev = new Developer();
+    bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        developers = await client.GetFromJsonAsync<Developer[]>("api/developer");
+
+        IsLoading = false;
+    }
+
+    async Task OnEditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        var editMoel = (Developer)e.EditModel;
+        var dataItem = e.IsNew ? dev : developers.FirstOrDefault(d => d.Id == editMoel.Id);
+
+        if (dataItem != null)
+        {
+            dataItem.FirstName = editMoel.FirstName;
+            dataItem.LastName = editMoel.LastName;
+            dataItem.Email = editMoel.Email;
+            dataItem.Experience = editMoel.Experience;
+            if (e.IsNew)
+            {
+                await client.PostAsJsonAsync("api/developer", dev);
+            }
+            else
+            {
+                await client.PutAsJsonAsync("api/developer", dataItem);
+            }
+            developers = await client.GetFromJsonAsync<Developer[]>("api/developer");
+        }
+    }
+
+    async Task OnDataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var dataItem = developers.FirstOrDefault(d => d.Id == (e.DataItem as Developer).Id);
+        if (dataItem != null)
+        {
+            await client.DeleteAsync($"api/developer/{dataItem.Id}");
+        }
+        developers = await client.GetFromJsonAsync<Developer[]>("api/developer");
+    }
+}

@@ -1,0 +1,90 @@
+﻿@page "/menu"
+
+@inject HttpClient client
+<h3>MenuSetting</h3>
+
+@if (IsLoading)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <DxGrid Data="menuSettings.Length > 0 ? menuSettings : Array.Empty<MenuSetting>()"
+            EditModelSaving="OnEditModelSaving"
+            DataItemDeleting="OnDataItemDeleting"
+            EditMode="GridEditMode.PopupEditForm"
+            AllowGroup = "true"
+            PopupEditFormHeaderText="Menu">
+        <Columns>
+            <DxGridCommandColumn VisibleIndex="0" />
+            <DxGridDataColumn FieldName="Order" />
+            <DxGridDataColumn FieldName="GroupName" />
+            <DxGridDataColumn FieldName="MenuName" />
+            <DxGridDataColumn FieldName="Page" />
+            <DxGridDataColumn FieldName="Memo" />
+        </Columns>
+        <EditFormTemplate Context="editFormContext">
+            <DxFormLayout>
+                <DxFormLayoutItem Caption="Order by: ">
+                    @editFormContext.GetEditor("Order")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Group Name: ">
+                    @editFormContext.GetEditor("GroupName")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Menu Name: ">
+                    @editFormContext.GetEditor("MenuName")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Page Name: ">
+                    @editFormContext.GetEditor("Page")
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Memo: ">
+                    @editFormContext.GetEditor("Memo")
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+}
+
+@code {
+    MenuSetting[] menuSettings { get; set; }
+    bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        menuSettings = await client.GetFromJsonAsync<MenuSetting[]>("api/menuSetting");
+        IsLoading = false;
+    }
+
+    async Task OnEditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        var editModel = (MenuSetting)e.EditModel;
+        var dataItem = e.IsNew ? new MenuSetting() : menuSettings.FirstOrDefault(d => d.MenuId == editModel.MenuId);
+
+        if(dataItem != null)
+        {
+            dataItem.Order = editModel.Order;
+            dataItem.GroupName = editModel.GroupName;
+            dataItem.MenuName = editModel.MenuName;
+            dataItem.Page = editModel.Page;
+            dataItem.Memo = editModel.Memo;
+            if(e.IsNew)
+            {
+                await client.PostAsJsonAsync("api/menuSetting", dataItem);
+            }
+            else
+            {
+                await client.PutAsJsonAsync("api/menuSetting", dataItem);
+            }
+            menuSettings = await client.GetFromJsonAsync<MenuSetting[]>("api/menuSetting");
+        }
+    }
+    async Task OnDataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var dataItem = menuSettings.FirstOrDefault(d => d.MenuId == (e.DataItem as MenuSetting).MenuId);
+        if (dataItem != null)
+        {
+            await client.DeleteAsync($"api/menuSetting/{dataItem.MenuId}");
+        }
+        menuSettings = await client.GetFromJsonAsync<MenuSetting[]>("api/menuSetting");
+    }
+}

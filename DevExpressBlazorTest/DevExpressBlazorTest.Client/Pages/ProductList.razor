@@ -1,0 +1,19 @@
+﻿@page "/product-list"
+@using DevExpressBlazorTest.Shared.Models
+@using DevExpressBlazorTest.Client.Shared
+@inject HttpClient Http
+
+
+@foreach (var product in Products)
+{
+    <PrdouctDisplay Product="product" DisplayBuyButton="true" />
+}
+
+@code {
+    public List<Product> Products { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Products = await Http.GetFromJsonAsync<List<Product>>("sample-data/products.json") ?? new();
+    }
+}
